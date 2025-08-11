@@ -113,7 +113,7 @@ func getOperationAndCapabilityFromName(capName string) (op, capability string) {
 }
 
 // newMatchPolicy Function
-func (fd *Feeder) newMatchPolicy(policyEnabled int, policyName, src string, mp interface{}) tp.MatchPolicy {
+func (fd *Feeder) newMatchPolicy(policyEnabled int, policyName, src string, mp any) tp.MatchPolicy {
 	match := tp.MatchPolicy{
 		PolicyName: policyName,
 		Source:     src,
@@ -304,9 +304,7 @@ func (fd *Feeder) UpdateSecurityPolicies(action string, endPoint tp.EndPoint) {
 	name := endPoint.NamespaceName + "_" + endPoint.EndPointName
 
 	if action == "DELETED" {
-		if _, ok := fd.SecurityPolicies[name]; ok {
-			delete(fd.SecurityPolicies, name)
-		}
+		delete(fd.SecurityPolicies, name)
 	}
 
 	// ADDED | MODIFIED
@@ -1107,7 +1105,7 @@ func (fd *Feeder) UpdateMatchedPolicy(log tp.Log) tp.Log {
 				}
 
 				// match sources
-				if (!secPolicy.IsFromSource) || (secPolicy.IsFromSource && (secPolicy.Source == log.ParentProcessName || secPolicy.Source == log.ProcessName)) {
+				if (!secPolicy.IsFromSource) || (secPolicy.IsFromSource && (strings.HasPrefix(log.Source, secPolicy.Source+" ") || secPolicy.Source == log.ProcessName || secPolicy.Source == log.ParentProcessName || (strings.HasSuffix(log.ParentProcessName, secPolicy.Source) && strings.HasPrefix(secPolicy.Source, "/")))) {
 					matchedRegex := false
 
 					switch secPolicy.ResourceType {
