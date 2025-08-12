@@ -1105,7 +1105,23 @@ func (fd *Feeder) UpdateMatchedPolicy(log tp.Log) tp.Log {
 				}
 
 				// match sources
-				if (!secPolicy.IsFromSource) || (secPolicy.IsFromSource && (strings.HasPrefix(log.Source, secPolicy.Source+" ") || secPolicy.Source == log.ProcessName || secPolicy.Source == log.ParentProcessName || (strings.HasSuffix(log.ParentProcessName, secPolicy.Source) && strings.HasPrefix(secPolicy.Source, "/")))) {
+				var sourceMatched bool
+				if !secPolicy.IsFromSource {
+					sourceMatched = true
+				} else {
+					if secPolicy.ResourceType == "ExecName" {
+						// Use flexible matching for execname + fromSource (fixes issue #1899)
+						sourceMatched = (strings.HasPrefix(log.Source, secPolicy.Source+" ") || 
+										secPolicy.Source == log.ProcessName || 
+										secPolicy.Source == log.ParentProcessName || 
+										(strings.HasSuffix(log.ParentProcessName, secPolicy.Source) && strings.HasPrefix(secPolicy.Source, "/")))
+					} else {
+						// Use exact matching for path + fromSource (preserve existing behavior)
+						sourceMatched = (secPolicy.Source == log.ParentProcessName || secPolicy.Source == log.ProcessName)
+					}
+				}
+				
+				if sourceMatched {
 					matchedRegex := false
 
 					switch secPolicy.ResourceType {
